@@ -2,6 +2,8 @@
 //  TODOIST
 // ============================================================
 
+const TODOIST_API_BASE = 'https://api.todoist.com/api/v1';
+
 window.loadTodoist = async function () {
   const token = getTodoistToken();
   if (!token) return;
@@ -9,21 +11,7 @@ window.loadTodoist = async function () {
   renderTasksShimmer();
 
   try {
-    const url = new URL('https://api.todoist.com/rest/v2/tasks');
-    url.searchParams.set('filter', 'overdue | today | tomorrow');
-
-    const resp = await fetch(url.toString(), {
-      headers: { Authorization: 'Bearer ' + token },
-    });
-
-    if (!resp.ok) {
-      const errorText = await resp.text().catch(() => '');
-      console.error('Todoist error', resp.status, errorText);
-      document.getElementById('tasks-list').innerHTML = '<div class="empty-state">failed to load tasks</div>';
-      return;
-    }
-
-    const tasks = await resp.json();
+    const tasks = await fetchTodoistTasks(token, '(overdue | today | tomorrow)');
     renderTasks(tasks);
 
     const dueSoon = tasks.filter(t => !t.is_completed).length;
@@ -33,6 +21,36 @@ window.loadTodoist = async function () {
     document.getElementById('tasks-list').innerHTML = '<div class="empty-state">failed to load tasks</div>';
   }
 };
+
+async function fetchTodoistTasks(token, query) {
+  const tasks = [];
+  let cursor = null;
+
+  while (true) {
+    const url = new URL(`${TODOIST_API_BASE}/tasks/filter`);
+    url.searchParams.set('query', query);
+    url.searchParams.set('limit', '200');
+    if (cursor) url.searchParams.set('cursor', cursor);
+
+    const resp = await fetch(url.toString(), {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+
+    if (!resp.ok) {
+      const errorText = await resp.text().catch(() => '');
+      throw new Error(`Todoist error ${resp.status}: ${errorText}`);
+    }
+
+    const data = await resp.json();
+    const page = Array.isArray(data) ? data : (data.results || data.items || []);
+    tasks.push(...page);
+
+    cursor = data.next_cursor || null;
+    if (!cursor) break;
+  }
+
+  return tasks;
+}
 
 function renderTasks(tasks) {
   const container = document.getElementById('tasks-list');
@@ -101,13 +119,13 @@ window.toggleTodoistTask = async function(el, taskId) {
   try {
     if (!wasChecked) {
       // Mark complete
-      await fetch(`https://api.todoist.com/rest/v2/tasks/${taskId}/close`, {
+      await fetch(`${TODOIST_API_BASE}/tasks/${taskId}/close`, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token },
       });
     } else {
       // Reopen
-      await fetch(`https://api.todoist.com/rest/v2/tasks/${taskId}/reopen`, {
+      await fetch(`${TODOIST_API_BASE}/tasks/${taskId}/reopen`, {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + token },
       });

@@ -71,7 +71,7 @@ async function connectTodoist() {
     code_challenge_method: 'S256',
   });
 
-  window.open('https://todoist.com/oauth/authorize?' + params.toString(),
+  window.open('https://app.todoist.com/oauth/authorize?' + params.toString(),
     'todoist-auth', 'width=500,height=600');
 }
 
@@ -82,7 +82,7 @@ window.addEventListener('message', async (e) => {
   const verifier = sessionStorage.getItem('todoist_verifier');
 
   // Exchange code for token
-  const resp = await fetch('https://todoist.com/oauth/access_token', {
+  const resp = await fetch('https://api.todoist.com/oauth/access_token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
