@@ -6,24 +6,6 @@ let googleTokenClient = null;
 let googleAccessToken = null;
 let todoistAccessToken = null;
 
-function setAuthStatusMessage(message) {
-  const authText = document.querySelector('#auth-banner .auth-text');
-  if (authText) authText.textContent = message;
-}
-
-function hasConfigValue(key) {
-  return typeof CONFIG[key] === 'string' && CONFIG[key].trim().length > 0;
-}
-
-function ensureAuthConfig(keys, providerName) {
-  const missingKeys = keys.filter((key) => !hasConfigValue(key));
-  if (missingKeys.length === 0) return true;
-
-  console.error(providerName + ' auth is missing config', missingKeys);
-  setAuthStatusMessage(providerName + ' sign-in is not configured for this deployment yet.');
-  return false;
-}
-
 // ── Google ──────────────────────────────────────────────────
 
 function loadGoogleScript() {
@@ -37,7 +19,6 @@ function loadGoogleScript() {
 }
 
 async function signInGoogle() {
-  if (!ensureAuthConfig(['GOOGLE_CLIENT_ID'], 'Google')) return;
   await loadGoogleScript();
 
   googleTokenClient = google.accounts.oauth2.initTokenClient({
@@ -75,7 +56,6 @@ function getGoogleToken() {
 // ── Todoist ──────────────────────────────────────────────────
 
 async function connectTodoist() {
-  if (!ensureAuthConfig(['TODOIST_CLIENT_ID', 'TODOIST_CLIENT_SECRET'], 'Todoist')) return;
   // PKCE flow
   const verifier = generateCodeVerifier();
   const challenge = await generateCodeChallenge(verifier);
@@ -98,7 +78,6 @@ async function connectTodoist() {
 // Called from todoist-callback.html via postMessage
 window.addEventListener('message', async (e) => {
   if (e.data?.type !== 'todoist_code') return;
-  if (!ensureAuthConfig(['TODOIST_CLIENT_ID', 'TODOIST_CLIENT_SECRET'], 'Todoist')) return;
   const code = e.data.code;
   const verifier = sessionStorage.getItem('todoist_verifier');
 
@@ -158,26 +137,10 @@ async function generateCodeChallenge(verifier) {
 function updateAuthBanner() {
   const hasGoogle = !!getGoogleToken();
   const hasTodoist = !!getTodoistToken();
-  const googleConfigured = hasConfigValue('GOOGLE_CLIENT_ID');
-  const todoistConfigured = hasConfigValue('TODOIST_CLIENT_ID') && hasConfigValue('TODOIST_CLIENT_SECRET');
 
   const googleBtn = document.getElementById('google-auth-btn');
   const todoistBtn = document.getElementById('todoist-auth-btn');
   const banner = document.getElementById('auth-banner');
-
-  if (!googleConfigured) {
-    googleBtn.textContent = 'Google not configured';
-    googleBtn.disabled = true;
-  }
-
-  if (!todoistConfigured) {
-    todoistBtn.textContent = 'Todoist not configured';
-    todoistBtn.disabled = true;
-  }
-
-  if (!googleConfigured || !todoistConfigured) {
-    setAuthStatusMessage('This deployment is missing one or more OAuth settings.');
-  }
 
   if (hasGoogle) {
     googleBtn.textContent = '✓ Google connected';
@@ -194,8 +157,6 @@ function updateAuthBanner() {
 
   if (hasGoogle && hasTodoist) {
     banner.classList.add('hidden');
-  } else {
-    banner.classList.remove('hidden');
   }
 }
 

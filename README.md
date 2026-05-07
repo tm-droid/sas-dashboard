@@ -8,13 +8,11 @@ A personal dashboard for Singapore American School students. Shows your Google C
 
 ### 1. Host the site
 
-The easiest free option is **GitHub Pages via GitHub Actions**:
+The easiest free option is **GitHub Pages**:
 
 1. Fork or clone this repo
-2. Go to Settings → Pages → Source: **GitHub Actions**
-3. Add the repository secrets `GOOGLE_CLIENT_ID`, `TODOIST_CLIENT_ID`, and `TODOIST_CLIENT_SECRET` in Settings → Secrets and variables → Actions
-4. Push to `main`
-5. Your site will be live at `https://yourusername.github.io/sas-dashboard`
+2. Go to Settings → Pages → Source: Deploy from branch → `main` → `/ (root)`
+3. Your site will be live at `https://yourusername.github.io/sas-dashboard`
 
 For local testing, use [VS Code Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) or run:
 ```bash
@@ -23,21 +21,13 @@ npx serve .
 
 ---
 
-### 2. Private app secrets
+### 2. OAuth app setup
 
-This repo is set up so the published dashboard uses deployment-owned OAuth credentials that are **not committed** to the repo.
-
-The deployed site expects these GitHub Actions secrets:
-
-- `GOOGLE_CLIENT_ID`
-- `TODOIST_CLIENT_ID`
-- `TODOIST_CLIENT_SECRET`
+This repo is configured as a static site with the OAuth app values stored in `src/config.js`.
 
 Anyone using the live dashboard can sign in with their own Google account and Todoist account. They do **not** need to create their own Google Cloud project or Todoist developer app.
 
-If you are deploying your own separate copy of the dashboard, you will need your own private secrets for that deployment.
-
-Because this is still a static site, GitHub Actions only keeps these values out of the repository. The Todoist client secret is still delivered to the browser in the deployed app, so it is not truly server-side secret.
+If you deploy your own separate copy of the dashboard, update `src/config.js` with the OAuth values you want that copy to use.
 
 ---
 
