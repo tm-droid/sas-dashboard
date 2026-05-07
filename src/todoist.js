@@ -155,9 +155,23 @@ function tomorrowStr() {
 }
 
 function getTodoistDueDate(task) {
-  if (isDateKey(task.due?.date)) return task.due.date;
-  if (task.due?.datetime) return localDateKey(new Date(task.due.datetime));
+  const dueDate = normalizeTodoistDate(task.due?.date || task.due_date);
+  if (dueDate) return dueDate;
+
+  const dueDateTime = task.due?.datetime || task.due_datetime;
+  if (dueDateTime) return localDateKey(new Date(dueDateTime));
+
   return '';
+}
+
+function normalizeTodoistDate(value) {
+  if (typeof value !== 'string') return '';
+
+  const dateMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (dateMatch) return dateMatch[1];
+
+  const parsed = new Date(value);
+  return localDateKey(parsed);
 }
 
 function localDateKey(date) {

@@ -100,7 +100,7 @@ async function fetchVisibleCalendars(token) {
   return calendars.filter(calendar =>
     !calendar.deleted &&
     !calendar.hidden &&
-    calendar.selected !== false &&
+    calendar.selected === true &&
     calendar.accessRole !== 'freeBusyReader'
   );
 }
