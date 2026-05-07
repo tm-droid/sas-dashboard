@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Connecting Todoist…</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f7f6f3; color: #1a1917; }
+    p { font-size: 14px; color: #6b6a65; }
+  </style>
+</head>
+<body>
+  <p>Connecting Todoist… this window will close automatically.</p>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const error = params.get('error');
+
+    if (code) {
+      window.opener?.postMessage({ type: 'todoist_code', code }, window.location.origin);
+      window.close();
+    } else {
+      document.querySelector('p').textContent = 'Auth failed: ' + (error || 'unknown error');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "SAS Dashboard",
+  "version": "1.0",
+  "description": "SAS student dashboard — replaces new tab with your schedule, tasks, and email.",
+  "chrome_url_overrides": {
+    "newtab": "newtab.html"
+  },
+  "permissions": [],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
