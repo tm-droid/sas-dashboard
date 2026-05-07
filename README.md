@@ -21,52 +21,23 @@ npx serve .
 
 ---
 
-### 2. Google API credentials
+### 2. Private app secrets
 
-You need a Google Cloud project to use Gmail and Google Calendar.
+This repo is set up so the published dashboard uses private OAuth credentials that are **not committed** to the repo.
 
-1. Go to [console.cloud.google.com](https://console.cloud.google.com/)
-2. Create a new project (call it "SAS Dashboard")
-3. Go to **APIs & Services → Library**
-4. Enable **Gmail API** and **Google Calendar API**
-5. Go to **APIs & Services → OAuth consent screen**
-   - User type: External
-   - Fill in app name, your email, and developer email
-   - Add scopes: `gmail.readonly`, `calendar.readonly`
-   - Add your Google account as a test user
-6. Go to **APIs & Services → Credentials → Create Credentials → OAuth client ID**
-   - Application type: **Web application**
-   - Authorised JavaScript origins:
-     - `http://localhost:8080` (for local dev)
-     - `https://yourusername.github.io` (your Pages URL)
-   - Click **Create** and copy the **Client ID**
-7. Open `src/config.js` and paste it into `GOOGLE_CLIENT_ID`
+The deployed site expects these GitHub Actions secrets:
+
+- `GOOGLE_CLIENT_ID`
+- `TODOIST_CLIENT_ID`
+- `TODOIST_CLIENT_SECRET`
+
+Anyone using the live dashboard can sign in with their own Google account and Todoist account. They do **not** need to create their own Google Cloud project or Todoist developer app.
+
+If you are deploying your own separate copy of the dashboard, you will need your own private secrets for that deployment.
 
 ---
 
-### 3. Todoist credentials
-
-1. Go to [app.todoist.com/app/settings/integrations/developer](https://app.todoist.com/app/settings/integrations/developer)
-2. Click **Create a new app**
-3. Set **OAuth redirect URL** to: `https://yourusername.github.io/sas-dashboard/todoist-callback.html`
-4. Copy **Client ID** and **Client Secret** into `src/config.js`
-
----
-
-### 4. Update config.js
-
-Open `src/config.js` and fill in:
-
-```js
-GOOGLE_CLIENT_ID: 'YOUR_CLIENT_ID.apps.googleusercontent.com',
-TODOIST_CLIENT_ID: 'YOUR_TODOIST_CLIENT_ID',
-TODOIST_CLIENT_SECRET: 'YOUR_TODOIST_CLIENT_SECRET',
-BASE_URL: 'https://yourusername.github.io/sas-dashboard',
-```
-
----
-
-### 5. (Optional) Chrome new tab extension
+### 3. (Optional) Chrome new tab extension
 
 If you use Chrome and want the dashboard to open on every new tab:
 
@@ -94,7 +65,7 @@ Since this is a static site, anyone at SAS can use it — they just need to:
 1. Visit your GitHub Pages URL
 2. Sign in with their own Google account and Todoist
 
-Their data is never sent anywhere — all API calls go directly from their browser to Google/Todoist.
+They do not need to set up Google Cloud or Todoist developer credentials themselves. Their data is never sent anywhere else — all API calls go directly from their browser to Google/Todoist.
 
 ---
 
