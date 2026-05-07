@@ -2,6 +2,10 @@
 //  GOOGLE CALENDAR
 // ============================================================
 
+const EVENT_PREVIEW_LIMIT = 5;
+let cachedCalendarEvents = [];
+let calendarEventsExpanded = false;
+
 window.loadCalendar = async function () {
   const token = getGoogleToken();
   if (!token) return;
@@ -22,6 +26,7 @@ window.loadCalendar = async function () {
       .filter(e => e.status !== 'cancelled')
       .sort(compareEvents);
 
+    calendarEventsExpanded = false;
     renderEvents(events);
     document.getElementById('stat-events').textContent = events.length;
   } catch (e) {
@@ -32,6 +37,7 @@ window.loadCalendar = async function () {
 
 function renderEvents(events) {
   const container = document.getElementById('events-list');
+  cachedCalendarEvents = events;
 
   if (!events.length) {
     container.innerHTML = '<div class="empty-state">no events today</div>';
@@ -40,8 +46,12 @@ function renderEvents(events) {
 
   const colors = ['blue', 'teal', 'coral', 'purple', 'amber', 'blue', 'teal'];
   const now = new Date();
+  const hasMoreEvents = events.length > EVENT_PREVIEW_LIMIT;
+  const visibleEvents = calendarEventsExpanded || !hasMoreEvents
+    ? events
+    : events.slice(0, EVENT_PREVIEW_LIMIT);
 
-  container.innerHTML = events.map((ev, i) => {
+  const eventHtml = visibleEvents.map((ev, i) => {
     const isAllDay = !!ev.start?.date;
     const start = isAllDay ? null : new Date(ev.start.dateTime);
     const end = isAllDay ? null : new Date(ev.end?.dateTime || ev.start.dateTime);
@@ -64,12 +74,25 @@ function renderEvents(events) {
         </div>
       </div>`;
   }).join('');
+
+  const toggleHtml = hasMoreEvents
+    ? `<button type="button" class="schedule-toggle" onclick="toggleScheduleEvents()" aria-expanded="${calendarEventsExpanded}">
+        ${calendarEventsExpanded ? 'Show fewer' : `Show ${events.length - EVENT_PREVIEW_LIMIT} more`}
+      </button>`
+    : '';
+
+  container.innerHTML = eventHtml + toggleHtml;
 }
 
 function renderEventsShimmer() {
   document.getElementById('events-list').innerHTML =
     [1,2,3].map(() => `<div class="shimmer" style="width:${60+Math.random()*30}%"></div>`).join('');
 }
+
+window.toggleScheduleEvents = function () {
+  calendarEventsExpanded = !calendarEventsExpanded;
+  renderEvents(cachedCalendarEvents);
+};
 
 function colorIdToClass(id) {
   const map = { '1':'blue','2':'teal','3':'purple','4':'coral','5':'teal','6':'coral','7':'blue','8':'teal','9':'purple','10':'teal','11':'coral' };

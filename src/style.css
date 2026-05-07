@@ -479,6 +479,41 @@ a:focus-visible,
   vertical-align: 1px;
 }
 
+.schedule-toggle {
+  width: 100%;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 10px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease,
+    transform 0.16s ease;
+}
+
+.schedule-toggle:hover {
+  background: var(--bg);
+  border-color: var(--border-hover);
+  color: var(--text);
+  box-shadow: var(--shadow-tiny);
+  transform: translateY(-1px);
+}
+
+.schedule-toggle:active {
+  transform: translateY(0);
+}
+
 /* Tasks */
 .task-row {
   display: grid;
