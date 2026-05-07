@@ -60,21 +60,19 @@ function renderTasks(tasks) {
     return;
   }
 
-  // Sort: overdue first, then today, then tomorrow
   const today = todayStr();
   const tomorrow = tomorrowStr();
 
   tasks.sort((a, b) => {
-    const aDue = a.due?.date || '';
-    const bDue = b.due?.date || '';
+    const aDue = getTodoistDueDate(a) || '';
+    const bDue = getTodoistDueDate(b) || '';
     return aDue.localeCompare(bDue);
   });
 
-  // Show max 6 tasks
   const shown = tasks.slice(0, 6);
 
   container.innerHTML = shown.map(task => {
-    const dueDate = task.due?.date;
+    const dueDate = getTodoistDueDate(task);
     const isOverdue = dueDate && dueDate < today;
     const isToday = dueDate === today;
     const isTomorrow = dueDate === tomorrow;
@@ -88,11 +86,19 @@ function renderTasks(tasks) {
 
     const checked = task.is_completed ? 'done' : '';
     const textClass = task.is_completed ? 'done' : '';
+    const priorityClass = getTodoistPriorityClass(task.priority);
+    const labels = getTodoistLabels(task);
+    const labelHtml = labels.length
+      ? `<div class="task-labels">${labels.map(label => `<span class="task-label">@${escHtml(label)}</span>`).join('')}</div>`
+      : '';
 
     return `
       <div class="task-row" data-id="${task.id}">
-        <div class="task-check ${checked}" onclick="toggleTodoistTask(this, '${task.id}')"></div>
-        <div class="task-text ${textClass}">${escHtml(task.content)}</div>
+        <div class="task-check ${priorityClass} ${checked}" onclick="toggleTodoistTask(this, '${task.id}')"></div>
+        <div class="task-main">
+          <div class="task-text ${textClass}">${escHtml(task.content)}</div>
+          ${labelHtml}
+        </div>
         <div class="task-due ${dueClass}">${dueLabel}</div>
       </div>`;
   }).join('');
@@ -113,8 +119,8 @@ window.toggleTodoistTask = async function(el, taskId) {
 
   const wasChecked = el.classList.contains('done');
   el.classList.toggle('done');
-  const textEl = el.nextElementSibling;
-  textEl.classList.toggle('done');
+  const textEl = el.parentElement?.querySelector('.task-text');
+  textEl?.classList.toggle('done');
 
   try {
     if (!wasChecked) {
@@ -133,22 +139,72 @@ window.toggleTodoistTask = async function(el, taskId) {
   } catch (e) {
     // Revert on error
     el.classList.toggle('done');
-    textEl.classList.toggle('done');
+    textEl?.classList.toggle('done');
   }
 };
 
 function todayStr() {
   const d = new Date();
-  return d.toISOString().split('T')[0];
+  return localDateKey(d);
 }
 
 function tomorrowStr() {
   const d = new Date();
   d.setDate(d.getDate() + 1);
-  return d.toISOString().split('T')[0];
+  return localDateKey(d);
+}
+
+function getTodoistDueDate(task) {
+  if (isDateKey(task.due?.date)) return task.due.date;
+  if (task.due?.datetime) return localDateKey(new Date(task.due.datetime));
+  return '';
+}
+
+function localDateKey(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function isDateKey(value) {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
 }
 
 function formatShortDate(dateStr) {
-  const d = new Date(dateStr + 'T00:00:00');
+  if (!isDateKey(dateStr)) return '';
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  if (Number.isNaN(d.getTime())) return '';
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function getTodoistPriorityClass(priority) {
+  if (typeof priority === 'string') {
+    const normalized = priority.toLowerCase();
+    if (normalized === 'p1') return 'priority-high';
+    if (normalized === 'p2') return 'priority-mid';
+    if (normalized === 'p3') return 'priority-low';
+  }
+
+  const p = Number(priority);
+  if (p === 4) return 'priority-high';
+  if (p === 3) return 'priority-mid';
+  if (p === 2) return 'priority-low';
+  return 'priority-neutral';
+}
+
+function getTodoistLabels(task) {
+  const labels = Array.isArray(task.labels)
+    ? task.labels
+    : (Array.isArray(task.label_names) ? task.label_names : []);
+
+  return labels
+    .map(label => {
+      if (typeof label === 'string') return label.replace(/^@+/, '').trim();
+      if (label?.name) return String(label.name).replace(/^@+/, '').trim();
+      return '';
+    })
+    .filter(Boolean);
 }

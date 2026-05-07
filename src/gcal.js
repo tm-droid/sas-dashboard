@@ -13,21 +13,15 @@ window.loadCalendar = async function () {
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
     const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59).toISOString();
 
-    const url = new URL('https://www.googleapis.com/calendar/v3/calendars/primary/events');
-    url.searchParams.set('timeMin', startOfDay);
-    url.searchParams.set('timeMax', endOfDay);
-    url.searchParams.set('singleEvents', 'true');
-    url.searchParams.set('orderBy', 'startTime');
-    url.searchParams.set('maxResults', '10');
+    const calendars = await fetchVisibleCalendars(token);
+    const eventGroups = await Promise.all(calendars.map(calendar =>
+      fetchCalendarEvents(token, calendar, startOfDay, endOfDay)
+    ));
+    const events = eventGroups
+      .flat()
+      .filter(e => e.status !== 'cancelled')
+      .sort(compareEvents);
 
-    const resp = await fetch(url, {
-      headers: { Authorization: 'Bearer ' + token },
-    });
-
-    if (resp.status === 401) { handleGoogleExpiry(); return; }
-    const data = await resp.json();
-
-    const events = (data.items || []).filter(e => e.status !== 'cancelled');
     renderEvents(events);
     document.getElementById('stat-events').textContent = events.length;
   } catch (e) {
@@ -44,7 +38,7 @@ function renderEvents(events) {
     return;
   }
 
-  const colors = ['blue', 'teal', 'coral', 'purple', 'blue', 'teal', 'coral'];
+  const colors = ['blue', 'teal', 'coral', 'purple', 'amber', 'blue', 'teal'];
   const now = new Date();
 
   container.innerHTML = events.map((ev, i) => {
@@ -54,17 +48,19 @@ function renderEvents(events) {
     const isNow = !isAllDay && start <= now && now <= end;
 
     const timeStr = isAllDay ? 'all day' : formatTime(start);
-    const color = ev.colorId ? colorIdToClass(ev.colorId) : colors[i % colors.length];
+    const dotStyle = getEventDotStyle(ev, colors[i % colors.length]);
     const nowBadge = isNow ? '<span class="now-badge">now</span>' : '';
     const loc = ev.location ? `<div class="event-sub">${escHtml(truncate(ev.location, 40))}</div>` : '';
+    const calendar = ev.calendarSummary ? `<div class="event-calendar">${escHtml(ev.calendarSummary)}</div>` : '';
 
     return `
       <div class="event-row">
-        <span class="event-dot ${color}"></span>
+        <span class="event-dot ${dotStyle.className}" ${dotStyle.style}></span>
         <div class="event-time">${timeStr}</div>
-        <div>
+        <div class="event-main">
           <div class="event-title ${isNow ? 'now' : ''}">${escHtml(ev.summary || '(no title)')}${nowBadge}</div>
           ${loc}
+          ${calendar}
         </div>
       </div>`;
   }).join('');
@@ -78,6 +74,78 @@ function renderEventsShimmer() {
 function colorIdToClass(id) {
   const map = { '1':'blue','2':'teal','3':'purple','4':'coral','5':'teal','6':'coral','7':'blue','8':'teal','9':'purple','10':'teal','11':'coral' };
   return map[id] || 'blue';
+}
+
+async function fetchVisibleCalendars(token) {
+  const calendars = [];
+  let pageToken = null;
+
+  do {
+    const url = new URL('https://www.googleapis.com/calendar/v3/users/me/calendarList');
+    url.searchParams.set('maxResults', '250');
+    if (pageToken) url.searchParams.set('pageToken', pageToken);
+
+    const resp = await fetch(url.toString(), {
+      headers: { Authorization: 'Bearer ' + token },
+    });
+
+    if (resp.status === 401) { handleGoogleExpiry(); throw new Error('Google token expired'); }
+    if (!resp.ok) throw new Error(`Calendar list error ${resp.status}`);
+
+    const data = await resp.json();
+    calendars.push(...(data.items || []));
+    pageToken = data.nextPageToken || null;
+  } while (pageToken);
+
+  return calendars.filter(calendar =>
+    !calendar.deleted &&
+    !calendar.hidden &&
+    calendar.selected !== false &&
+    calendar.accessRole !== 'freeBusyReader'
+  );
+}
+
+async function fetchCalendarEvents(token, calendar, startOfDay, endOfDay) {
+  const url = new URL(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar.id)}/events`);
+  url.searchParams.set('timeMin', startOfDay);
+  url.searchParams.set('timeMax', endOfDay);
+  url.searchParams.set('singleEvents', 'true');
+  url.searchParams.set('orderBy', 'startTime');
+  url.searchParams.set('maxResults', '20');
+
+  const resp = await fetch(url.toString(), {
+    headers: { Authorization: 'Bearer ' + token },
+  });
+
+  if (resp.status === 401) { handleGoogleExpiry(); throw new Error('Google token expired'); }
+  if (!resp.ok) {
+    console.warn(`Skipping calendar ${calendar.summary || calendar.id}: ${resp.status}`);
+    return [];
+  }
+
+  const data = await resp.json();
+  return (data.items || []).map(event => ({
+    ...event,
+    calendarId: calendar.id,
+    calendarSummary: calendar.summaryOverride || calendar.summary,
+    calendarColor: calendar.backgroundColor,
+  }));
+}
+
+function compareEvents(a, b) {
+  const aKey = eventSortKey(a);
+  const bKey = eventSortKey(b);
+  return aKey.localeCompare(bKey);
+}
+
+function eventSortKey(event) {
+  return event.start?.dateTime || `${event.start?.date || ''}T00:00:00`;
+}
+
+function getEventDotStyle(event, fallbackClass) {
+  if (event.colorId) return { className: colorIdToClass(event.colorId), style: '' };
+  if (event.calendarColor) return { className: '', style: `style="background:${escHtml(event.calendarColor)}"` };
+  return { className: fallbackClass, style: '' };
 }
 
 function handleGoogleExpiry() {

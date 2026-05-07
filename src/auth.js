@@ -113,6 +113,7 @@ function signOut() {
   localStorage.removeItem('google_token');
   localStorage.removeItem('google_token_expiry');
   localStorage.removeItem('todoist_token');
+  localStorage.removeItem('gmail_photo_cache');
   googleAccessToken = null;
   todoistAccessToken = null;
   location.reload();
