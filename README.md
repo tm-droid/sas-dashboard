@@ -23,11 +23,16 @@ npx serve .
 
 ### 2. OAuth app setup
 
-This repo is configured as a static site with the OAuth app values stored in `src/config.js`.
+This repo supports two ways to provide OAuth values:
+
+1. Inject them at deploy time via GitHub Actions secrets
+2. Fall back to the bundled values in `src/config.js` for local/static testing
+
+The GitHub Pages workflow writes `src/runtime-secrets.js` during deployment, so the live site can pick up your own OAuth credentials without changing the app code.
 
 Anyone using the live dashboard can sign in with their own Google account and Todoist account. They do **not** need to create their own Google Cloud project or Todoist developer app.
 
-If you deploy your own separate copy of the dashboard, update `src/config.js` with the OAuth values you want that copy to use.
+If you deploy your own separate copy of the dashboard, update the workflow secrets or edit `src/config.js` with the OAuth values you want that copy to use.
 
 ---
 
