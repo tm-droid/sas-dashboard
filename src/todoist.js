@@ -9,12 +9,16 @@ window.loadTodoist = async function () {
   renderTasksShimmer();
 
   try {
-    const resp = await fetch('https://api.todoist.com/rest/v2/tasks?filter=due%%3Atoday%%20|%%20overdue%%20|%%20due%%3Atomorrow', {
+    const url = new URL('https://api.todoist.com/rest/v2/tasks');
+    url.searchParams.set('filter', 'overdue | today | tomorrow');
+
+    const resp = await fetch(url.toString(), {
       headers: { Authorization: 'Bearer ' + token },
     });
 
     if (!resp.ok) {
-      console.error('Todoist error', resp.status);
+      const errorText = await resp.text().catch(() => '');
+      console.error('Todoist error', resp.status, errorText);
       document.getElementById('tasks-list').innerHTML = '<div class="empty-state">failed to load tasks</div>';
       return;
     }
