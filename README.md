@@ -1,83 +1,86 @@
 # SAS Dashboard
 
-A personal dashboard for Singapore American School students. Shows your Google Calendar events, Gmail inbox, and Todoist tasks — all in one place. Set it as your homepage or use the Chrome extension to open it on every new tab.
+A personal dashboard for Singapore American School students. See your Google Calendar events, Gmail inbox, and Todoist tasks — all in one place, every time you open a new tab.
+
+**→ [Open the dashboard](https://tm-droid.github.io/sas-dashboard)**
 
 ---
 
-## Setup
+## Getting started
 
-### 1. Host the site
+### 1. Open the dashboard
 
-The easiest free option is **GitHub Pages**:
+Visit **[tm-droid.github.io/sas-dashboard](https://tm-droid.github.io/sas-dashboard)** in any browser.
 
-1. Fork or clone this repo
-2. Go to Settings → Pages → Source: Deploy from branch → `main` → `/ (root)`
-3. Your site will be live at `https://yourusername.github.io/sas-dashboard`
+### 2. Sign in
 
-For local testing, use [VS Code Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer) or run:
-```bash
-npx serve .
-```
+- Click **Sign in with Google** to connect your Gmail and Google Calendar
+- Click **Connect Todoist** to connect your tasks (optional)
 
----
+That's it. Your data loads automatically every time you visit.
 
-### 2. OAuth app setup
+### 3. Set it as your homepage (recommended)
 
-This repo supports two ways to provide OAuth values:
+So it opens every time you start your browser:
 
-1. Inject them at deploy time via GitHub Actions secrets
-2. Fall back to the bundled values in `src/config.js` for local/static testing
+**Chrome:** Settings → On startup → Open a specific page → add `https://tm-droid.github.io/sas-dashboard`
 
-The GitHub Pages workflow writes `src/runtime-secrets.js` during deployment, so the live site can pick up your own OAuth credentials without changing the app code.
+**Safari:** Settings → General → Homepage → paste the URL
 
-Anyone using the live dashboard can sign in with their own Google account and Todoist account. They do **not** need to create their own Google Cloud project or Todoist developer app.
+### 4. (Chrome only) Open on every new tab
 
-If you deploy your own separate copy of the dashboard, update the workflow secrets or edit `src/config.js` with the OAuth values you want that copy to use.
+If you want the dashboard to open whenever you open a new tab:
 
----
-
-### 3. (Optional) Chrome new tab extension
-
-If you use Chrome and want the dashboard to open on every new tab:
-
-1. Open `extension/newtab.html` and update the URL to your GitHub Pages URL
+1. Download the `extension/` folder from this repo
 2. Go to `chrome://extensions/`
-3. Enable **Developer mode** (top right)
-4. Click **Load unpacked** and select the `extension/` folder
-
-That's it — every new tab will open your dashboard.
-
----
-
-## Usage
-
-- Click **Sign in with Google** to connect Gmail + Calendar
-- Click **Connect Todoist** to connect your tasks
-- Credentials are saved in `localStorage` so you only sign in once per browser
-- Click the **sign out** link (top right) to clear everything
-
----
-
-## Sharing with other students
-
-Since this is a static site, anyone at SAS can use it — they just need to:
-1. Visit your GitHub Pages URL
-2. Sign in with their own Google account and Todoist
-
-They do not need to set up Google Cloud or Todoist developer credentials themselves. Their data is never sent anywhere else — all API calls go directly from their browser to Google/Todoist.
-
----
-
-## Tech
-
-- Vanilla HTML/CSS/JS — no build step, no dependencies
-- Google Identity Services (GIS) for OAuth
-- Todoist REST API v2
-- Gmail API v1
-- Google Calendar API v3
+3. Enable **Developer mode** (top right toggle)
+4. Click **Load unpacked** → select the `extension/` folder
 
 ---
 
 ## Privacy
 
-All data stays in the user's browser. No server, no database, no tracking. Tokens are stored only in `localStorage` on the user's own machine.
+Your data never leaves your browser. All API calls go directly from your device to Google and Todoist — nothing is stored on any server. Tokens are saved only in your browser's `localStorage` and can be cleared anytime with the **sign out** link.
+
+---
+
+## FAQ
+
+**Do I need a Google Cloud account or Todoist developer account?**
+No. Just sign in with your existing SAS Google account and Todoist account.
+
+**Does this work on Safari / Firefox / other browsers?**
+Yes — the website works on any browser. The new tab Chrome extension is Chrome-only.
+
+**Is my data shared with anyone?**
+No. See Privacy above.
+
+**Something's broken or I have a suggestion.**
+Open an issue on this repo.
+
+---
+
+## For developers
+
+Want to run your own copy or contribute?
+
+### Stack
+- Vanilla HTML/CSS/JS — no build step, no dependencies
+- Google Identity Services (GIS) for OAuth
+- Gmail API v1, Google Calendar API v3
+- Todoist REST API v1
+
+### Local development
+
+```bash
+npx serve .
+# then open http://localhost:3000
+```
+
+### Self-hosting
+
+1. Fork the repo
+2. Set up a Google Cloud project — enable Gmail API and Google Calendar API, create an OAuth client ID (Web application), add your domain as an authorised JavaScript origin
+3. Create a Todoist developer app at [app.todoist.com/app/settings/integrations/developer](https://app.todoist.com/app/settings/integrations/developer) — set the redirect URI to `https://yourdomain/todoist-callback.html`
+4. Add `GOOGLE_CLIENT_ID`, `TODOIST_CLIENT_ID`, and `TODOIST_CLIENT_SECRET` as GitHub Actions secrets
+5. Enable GitHub Pages with the Actions workflow in `.github/workflows/deploy.yml`
