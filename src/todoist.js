@@ -2,7 +2,7 @@
 //  TODOIST
 // ============================================================
 
-const TODOIST_API_BASE = 'https://api.todoist.com/api/v1';
+const TODOIST_API_BASE = 'https://api.todoist.com/rest/v1';
 
 window.loadTodoist = async function () {
   const token = getTodoistToken();
@@ -23,33 +23,39 @@ window.loadTodoist = async function () {
 };
 
 async function fetchTodoistTasks(token, query) {
-  const tasks = [];
-  let cursor = null;
+  const url = new URL(`${TODOIST_API_BASE}/tasks`);
+  url.searchParams.set('filter', query);
+  url.searchParams.set('limit', '200');
 
-  while (true) {
-    const url = new URL(`${TODOIST_API_BASE}/tasks/filter`);
-    url.searchParams.set('query', query);
-    url.searchParams.set('limit', '200');
-    if (cursor) url.searchParams.set('cursor', cursor);
-
-    const resp = await fetch(url.toString(), {
+  let resp;
+  try {
+    resp = await fetch(url.toString(), {
       headers: { Authorization: 'Bearer ' + token },
     });
-
-    if (!resp.ok) {
-      const errorText = await resp.text().catch(() => '');
-      throw new Error(`Todoist error ${resp.status}: ${errorText}`);
-    }
-
-    const data = await resp.json();
-    const page = Array.isArray(data) ? data : (data.results || data.items || []);
-    tasks.push(...page);
-
-    cursor = data.next_cursor || null;
-    if (!cursor) break;
+  } catch (e) {
+    throw new Error('Todoist fetch failed');
   }
 
-  return tasks;
+  if (!resp.ok) {
+    const errorText = await resp.text().catch(() => '');
+    if (resp.status === 401) {
+      clearInvalidTodoistToken();
+    }
+    throw new Error(`Todoist error ${resp.status}: ${errorText}`);
+  }
+
+  return await resp.json();
+}
+
+function clearInvalidTodoistToken() {
+  localStorage.removeItem('todoist_token');
+  if (typeof todoistAccessToken !== 'undefined') todoistAccessToken = null;
+  const todoistBtn = document.getElementById('todoist-auth-btn');
+  if (todoistBtn) {
+    todoistBtn.textContent = 'Connect Todoist';
+    todoistBtn.classList.remove('connected');
+    todoistBtn.disabled = false;
+  }
 }
 
 function renderTasks(tasks) {

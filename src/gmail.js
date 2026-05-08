@@ -2,6 +2,8 @@
 //  GMAIL
 // ============================================================
 
+let peopleSearchAllowed = true;
+
 window.loadGmail = async function () {
   const token = getGoogleToken();
   if (!token) return;
@@ -155,7 +157,7 @@ async function getSenderPhotoMap(token, emails) {
     }
   });
 
-  if (!missing.length) return result;
+  if (!missing.length || !peopleSearchAllowed) return result;
 
   try {
     await warmPeopleSearchCache(token);
@@ -178,7 +180,7 @@ async function getSenderPhotoMap(token, emails) {
 }
 
 async function warmPeopleSearchCache(token) {
-  if (window.peopleSearchWarmed) return;
+  if (!peopleSearchAllowed || window.peopleSearchWarmed) return;
 
   const url = new URL('https://people.googleapis.com/v1/people:searchContacts');
   url.searchParams.set('query', '');
@@ -187,9 +189,14 @@ async function warmPeopleSearchCache(token) {
 
   const resp = await fetch(url.toString(), {
     headers: { Authorization: 'Bearer ' + token },
-  }).catch(() => {});
+  }).catch(() => null);
 
-  if (resp?.ok) window.peopleSearchWarmed = true;
+  if (!resp || resp.status === 401 || resp.status === 403) {
+    peopleSearchAllowed = false;
+    return;
+  }
+
+  if (resp.ok) window.peopleSearchWarmed = true;
 }
 
 async function fetchContactPhoto(token, email) {
@@ -200,9 +207,12 @@ async function fetchContactPhoto(token, email) {
 
   const resp = await fetch(url.toString(), {
     headers: { Authorization: 'Bearer ' + token },
-  });
+  }).catch(() => null);
 
-  if (resp.status === 401 || resp.status === 403) return { email, url: null };
+  if (!resp || resp.status === 401 || resp.status === 403) {
+    peopleSearchAllowed = false;
+    return { email, url: null };
+  }
   if (!resp.ok) return { email, url: null };
 
   const data = await resp.json();
