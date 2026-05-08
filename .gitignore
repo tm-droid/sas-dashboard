@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor folders
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local dev servers
+node_modules/
+.cache/
+
+# Local env / secrets (never commit these)
+.env
+.env.local
+src/runtime-secrets.js.local
